@@ -11,8 +11,10 @@ import f.cking.software.domain.toDomain
 import f.cking.software.splitToBatches
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -23,7 +25,8 @@ class DevicesRepository(
     private val deviceDao: DeviceDao = appDatabase.deviceDao()
     private val appleContactsDao = appDatabase.appleContactDao()
     private val lastBatch = MutableStateFlow(emptyList<DeviceData>())
-    private val allDevices = MutableStateFlow(emptyList<DeviceData>())
+    private val allDevices = deviceDao.observeAll()
+        .map { it.toDomainWithAirDrop() }
 
     suspend fun getDevices(): List<DeviceData> {
         return withContext(Dispatchers.IO) {
@@ -54,12 +57,8 @@ class DevicesRepository(
         lastBatch.value = emptyList()
     }
 
-    suspend fun observeAllDevices(): StateFlow<List<DeviceData>> {
-        return allDevices.apply {
-            if (allDevices.value.isEmpty()) {
-                notifyListeners()
-            }
-        }
+    fun observeAllDevices(): Flow<List<DeviceData>> {
+        return allDevices
     }
 
     suspend fun observeLastBatch(): StateFlow<List<DeviceData>> {
@@ -99,6 +98,17 @@ class DevicesRepository(
                 deviceDao.deleteAllByAddress(addressesBatch)
             }
             notifyListeners()
+        }
+    }
+
+    suspend fun clearUnAssociatedAirdrops() {
+        withContext(Dispatchers.IO) {
+            val allDevices = deviceDao.getAll().mapTo(mutableSetOf()) { it.address }
+            val allAidrops = appleContactsDao.getAll().map { it.associatedAddress }
+
+            val unassotiatedAirdrops = allAidrops.filter { !allDevices.contains(it) }
+
+            appleContactsDao.deleteAllByAddresses(unassotiatedAirdrops)
         }
     }
 
@@ -149,13 +159,9 @@ class DevicesRepository(
 
     private suspend fun notifyListeners() {
         coroutineScope {
-            launch {
+            launch(Dispatchers.Default) {
                 val data = getLastBatch()
                 lastBatch.emit(data)
-            }
-            launch {
-                val data = getDevices()
-                allDevices.emit(data)
             }
         }
     }
@@ -168,20 +174,15 @@ class DevicesRepository(
     }
 
     private suspend fun List<DeviceEntity>.toDomainWithAirDrop(): List<DeviceData> {
-        return withContext(Dispatchers.IO) {
-
-            val allRelatedContacts =
-                splitToBatches(DatabaseUtils.getMaxSQLVariablesNumber()).flatMap { batch ->
-                    appleContactsDao.getByAddresses(batch.map { it.address })
-                }
+        return withContext(Dispatchers.Default) {
+            val allRelatedContacts = withContext(Dispatchers.IO) {
+                appleContactsDao.getAll().groupBy { it.associatedAddress }
+            }
 
             map { device ->
-                val airdrop = allRelatedContacts.asSequence()
-                    .filter { it.associatedAddress == device.address }
-                    .map { it.toDomain() }
-                    .toList()
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { AppleAirDrop(it) }
+                val airdrop = allRelatedContacts[device.address]?.let {
+                    AppleAirDrop(it.map { it.toDomain() })
+                }
 
                 device.toDomain(airdrop)
             }

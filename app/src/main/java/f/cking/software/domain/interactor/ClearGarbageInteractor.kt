@@ -23,6 +23,7 @@ class ClearGarbageInteractor(
                 .toList()
 
             devicesRepository.deleteAllByAddress(devices)
+            devicesRepository.clearUnAssociatedAirdrops()
             locationRepository.removeDeviceLocationsByAddresses(devices)
             devices.count()
         }
