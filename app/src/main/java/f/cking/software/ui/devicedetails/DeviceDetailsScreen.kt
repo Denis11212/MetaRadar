@@ -110,7 +110,9 @@ import f.cking.software.utils.graphic.TagChip
 import f.cking.software.utils.graphic.ThemedDialog
 import f.cking.software.utils.graphic.infoDialog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.koin.androidx.compose.koinViewModel
@@ -796,7 +798,7 @@ object DeviceDetailsScreen {
                 }
             }
 
-            if (viewModel.markersInLoadingState) {
+            if (viewModel.markersInLoadingState || viewModel.loadingHeatmap) {
                 LinearProgressIndicator(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -892,6 +894,25 @@ object DeviceDetailsScreen {
         var mapView: MapView? by remember { mutableStateOf(null) }
         val colorScheme = MaterialTheme.colorScheme
 
+
+        fun getViewport(): Tile? {
+            val mapView = mapView ?: return null
+            return Tile(topLeft = mapView.projection.topLeft().toLocation(), mapView.projection.bottomRight().toLocation())
+        }
+
+        var pendingViewport: Tile? by remember { mutableStateOf(getViewport()) }
+        var committedViewport: Tile? by remember { mutableStateOf(pendingViewport) }
+
+        fun updateViewport() {
+            pendingViewport = getViewport()
+            Timber.tag(TAG).d("Update viewport")
+        }
+
+        fun commitViewPort() {
+            committedViewport = pendingViewport
+            Timber.tag(TAG).d("Commit viewport")
+        }
+
         MapView(
             modifier = modifier.pointerInteropFilter { event ->
                 if (mapView != null) {
@@ -921,16 +942,19 @@ object DeviceDetailsScreen {
                 initMapState(map, colorScheme)
                 mapIsReadyToUse.invoke()
                 map.addMapListener(object : MapListener {
+
                     override fun onScroll(event: ScrollEvent?): Boolean {
                         isMoving.value = false
+                        updateViewport()
                         return true
                     }
 
                     override fun onZoom(event: ZoomEvent?): Boolean {
-                        // do nothing
+                        updateViewport()
                         return true
                     }
                 })
+                updateViewport()
             },
             onUpdate = { map -> mapView = map }
         )
@@ -938,28 +962,15 @@ object DeviceDetailsScreen {
 
         if (mapView != null) {
             val mapView = mapView!!
+
             val mapUpdate = MapUpdate(viewModel.pointsState, viewModel.cameraState, mapView)
 
-            fun getViewport(): Tile {
-                return Tile(topLeft = mapView.projection.topLeft().toLocation(), mapView.projection.bottomRight().toLocation())
+            LaunchedEffect(pendingViewport) {
+                delay(50L)
+                yield()
+                commitViewPort()
             }
 
-            var viewport: Tile by remember { mutableStateOf(getViewport()) }
-            mapView.addMapListener(object : MapListener {
-                private fun updateViewport() {
-                    viewport = getViewport()
-                }
-
-                override fun onScroll(event: ScrollEvent): Boolean {
-                    updateViewport()
-                    return true
-                }
-
-                override fun onZoom(event: ZoomEvent): Boolean {
-                    updateViewport()
-                    return true
-                }
-            })
             LaunchedEffect(mapView, viewModel.pointsState, viewModel.pointsStyle) {
                 refreshMap(mapUpdate, batchProcessor, mapColorScheme, viewModel.pointsStyle)
             }
@@ -969,8 +980,9 @@ object DeviceDetailsScreen {
             }
 
             val tilesState = rememberTilesState()
-            LaunchedEffect(mapView, viewModel.pointsState, viewModel.useHeatmap, viewport) {
-                renderHeatmap(mapUpdate, viewport, viewModel, tilesState)
+            LaunchedEffect(mapView, viewModel.pointsState, viewModel.useHeatmap, committedViewport) {
+                val committedViewport = committedViewport ?: return@LaunchedEffect
+                renderHeatmap(mapUpdate, committedViewport, viewModel, tilesState)
             }
         }
     }
@@ -1033,6 +1045,11 @@ object DeviceDetailsScreen {
 
                 tilesState.lastLocationsState = mapUpdate.points
 
+                val loadingJob = launch {
+                    delay(30)
+                    yield()
+                    viewModel.loadingHeatmap = true
+                }
                 tiles.mapParallel { tile ->
                     val positionsForTile = locations
                         .mapNotNull {
@@ -1057,8 +1074,6 @@ object DeviceDetailsScreen {
                         mapUpdate.map.overlays.remove(existedTile.overlay)
                         tilesState.tiles.remove(tile)
                     }
-
-                    yield()
                     Timber.tag(TAG).d("Rendering tile with ${positionsForTile.size} points")
                     val bitmap = HeatMapBitmapFactory.generateTileGradientBitmapFastSeamless(
                         positionsAll = positionsForTile,
@@ -1068,6 +1083,7 @@ object DeviceDetailsScreen {
                         debugBorderPx = 0,
                     )
 
+                    yield()
                     val heatmapOverlay = GroundOverlay()
                     heatmapOverlay.setImage(bitmap)
                     heatmapOverlay.setPosition(tile.topLeft.toGeoPoint(), tile.bottomRight.toGeoPoint())
@@ -1079,6 +1095,8 @@ object DeviceDetailsScreen {
                 }
 
                 Timber.tag(TAG).d("All tiles rendered")
+                loadingJob.cancel()
+                viewModel.loadingHeatmap = false
             }
         } else {
             mapUpdate.map.overlays.removeAll { it is GroundOverlay }

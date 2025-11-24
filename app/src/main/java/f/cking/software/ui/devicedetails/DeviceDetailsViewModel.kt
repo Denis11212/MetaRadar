@@ -64,6 +64,7 @@ class DeviceDetailsViewModel(
     var cameraState: MapCameraState by mutableStateOf(DEFAULT_MAP_CAMERA_STATE)
     var historyPeriod by mutableStateOf(DEFAULT_HISTORY_PERIOD)
     var markersInLoadingState by mutableStateOf(false)
+    var loadingHeatmap by mutableStateOf(false)
     var onlineStatusData: OnlineStatus? by mutableStateOf(null)
     var pointsStyle: PointsStyle by mutableStateOf(DEFAULT_POINTS_STYLE)
     var rawData: List<Pair<String, String>> by mutableStateOf(listOf())
