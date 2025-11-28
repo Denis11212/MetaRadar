@@ -19,6 +19,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import f.cking.software.data.repo.SettingsRepository
 import f.cking.software.domain.model.BleScanDevice
 import f.cking.software.toBase64
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,7 @@ class BleScannerHelper(
     private val bleFiltersProvider: BleFiltersProvider,
     private val appContext: Context,
     private val powerModeHelper: PowerModeHelper,
+    private val settingsRepository: SettingsRepository,
 ) {
 
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -56,8 +58,14 @@ class BleScannerHelper(
     private val callback = object : ScanCallback() {
 
         @SuppressLint("MissingPermission")
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
+
+            if (result == null || result.device == null) {
+                Timber.e(IllegalArgumentException("Scan result is null"))
+                return
+            }
+
             result.scanRecord?.serviceUuids?.map { bleFiltersProvider.previouslyNoticedServicesUUIDs.add(it.uuid.toString()) }
             val addressType: Int? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 result.device.addressType
@@ -73,7 +81,7 @@ class BleScannerHelper(
                 scanRecordRaw = result.scanRecord?.bytes,
                 rssi = result.rssi,
                 addressType = addressType,
-                deviceClass = result.device.bluetoothClass.deviceClass,
+                deviceClass = result.device?.bluetoothClass?.deviceClass,
                 isPaired = isPaired,
                 serviceUuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString() }.orEmpty(),
                 isConnectable = result.isConnectable,
@@ -141,19 +149,23 @@ class BleScannerHelper(
                             Timber.tag(TAG_CONNECT).d("Connecting to device $address")
                             trySend(DeviceConnectResult.Connecting)
                         }
+
                         BluetoothProfile.STATE_CONNECTED -> {
                             Timber.tag(TAG_CONNECT).d("Connected to device $address")
                             trySend(DeviceConnectResult.Connected(gatt))
                         }
+
                         BluetoothProfile.STATE_DISCONNECTING -> {
                             Timber.tag(TAG_CONNECT).d("Disconnecting from device $address")
                             trySend(DeviceConnectResult.Disconnecting)
                         }
+
                         BluetoothProfile.STATE_DISCONNECTED -> {
                             Timber.tag(TAG_CONNECT).d("Disconnected from device $address")
                             handleDisconnect(status, gatt)
                             close(gatt)
                         }
+
                         else -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.UnspecifiedConnectionError(gatt, status))
@@ -166,26 +178,32 @@ class BleScannerHelper(
                         BluetoothGatt.GATT_SUCCESS -> {
                             trySend(DeviceConnectResult.Disconnected)
                         }
+
                         CONNECTION_FAILED_TO_ESTABLISH -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.ConnectionFailedToEstablish(gatt, status))
                         }
+
                         CONNECTION_FAILED_BEFORE_INITIALIZING -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.ConnectionFailedBeforeInitializing(gatt, status))
                         }
+
                         CONNECTION_TERMINATED -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.ConnectionTerminated(gatt, status))
                         }
+
                         BluetoothGatt.GATT_CONNECTION_TIMEOUT -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.ConnectionTimeout(gatt, status))
                         }
+
                         BluetoothGatt.GATT_FAILURE -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.ConnectionFailedTooManyClients(gatt, status))
                         }
+
                         else -> {
                             Timber.tag(TAG_CONNECT).e("Error while connecting to device $address. Error code: $status")
                             trySend(DeviceConnectResult.DisconnectedWithError.UnspecifiedConnectionError(gatt, status))
@@ -257,6 +275,7 @@ class BleScannerHelper(
                             Timber.tag(tag).i("Try disconnect from ${gatt.device.address}")
                             gatt.disconnect()
                         }
+
                         BluetoothProfile.STATE_DISCONNECTED -> {
                             Timber.tag(tag).i("Disconnected. Closing connection ${gatt.device.address}")
                             gatt.close()
@@ -307,7 +326,9 @@ class BleScannerHelper(
 
     sealed interface DeviceConnectResult {
         data class AvailableServices(val gatt: BluetoothGatt, val services: List<BluetoothGattService>) : DeviceConnectResult
-        data class CharacteristicRead(val gatt: BluetoothGatt, val characteristic: BluetoothGattCharacteristic, val valueEncoded64: String) : DeviceConnectResult
+        data class CharacteristicRead(val gatt: BluetoothGatt, val characteristic: BluetoothGattCharacteristic, val valueEncoded64: String) :
+            DeviceConnectResult
+
         data class FailedReadCharacteristic(val gatt: BluetoothGatt, val characteristic: BluetoothGattCharacteristic) : DeviceConnectResult
         data class DescriptorRead(val gatt: BluetoothGatt, val descriptor: BluetoothGattDescriptor, val valueEncoded64: String) : DeviceConnectResult
         data object Connecting : DeviceConnectResult
@@ -352,10 +373,16 @@ class BleScannerHelper(
             currentScanTimeMs = System.currentTimeMillis()
 
             val powerMode = powerModeHelper.powerMode()
-            val scanFilters = if (powerMode.useRestrictedBleConfig) {
+            val keepScreenOn = powerMode.tryToTurnOnScreen && settingsRepository.getWakeUpScreenWhileScanning()
+            val scanFilters = if (powerMode.useRestrictedBleConfig && !keepScreenOn) {
                 bleFiltersProvider.getBackgroundFilters()
             } else {
                 listOf(ScanFilter.Builder().build())
+            }
+
+            if (powerMode.tryToTurnOnScreen && settingsRepository.getWakeUpScreenWhileScanning()) {
+                Timber.tag(TAG).d("Will try to turn on screen for ${powerMode.scanDuration} ms")
+                powerModeHelper.wakeScreenTemporarily(powerMode.scanDuration)
             }
 
             val scanSettings = ScanSettings.Builder()

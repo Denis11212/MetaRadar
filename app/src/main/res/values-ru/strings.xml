@@ -91,7 +91,7 @@
     <string name="secret_cat">Секретный кот</string>
     <string name="silent_mode_title">Оффлайн режим</string>
     <string name="silent_mode_subtitle">Выключить любую сетевую коммуникацию от приложения. Может быть полезно чтобы экономить трафик или оставаться незаметным в сети.</string>
-    <string name="database_block_title">Управление базой данных</string>
+    <string name="database_actions">Управление базой данных</string>
     <string name="app_settings_title">Настройки</string>
     <string name="silent_mode_is_off_toast">Оффлайн режим выключен. Вы можете включить его в настройках.</string>
 	<string name="enable_deep_analysis">Глубокий анализ</string>
@@ -294,7 +294,7 @@
         <item quantity="other">обнаружено %d профилей!</item>
     </plurals>
 
-    <string name="devices_matched_postfix">\" устройство совпало!\"</string>
+    <string name="devices_matched_postfix">\"%s\" устройство совпало!</string>
     <string name="scanner_notification_channel_name">Уведомление о фоновой работе сканера</string>
     <string name="device_found_notification_channel_name">Уведомление радара</string>
     <string name="location_is_turned_off_title">Геолокация выключена</string>

@@ -1,5 +1,6 @@
 package f.cking.software.ui.settings
 
+import android.text.format.Formatter
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -100,9 +102,19 @@ object SettingsScreen {
     @Composable
     private fun DatabaseBlock(viewModel: SettingsViewModel) {
         RoundedBox {
-            Text(text = stringResource(id = R.string.database_block_title), fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = stringResource(R.string.database_information), fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(8.dp))
 
+            val databaseInfo = viewModel.databaseInfo
+            if (databaseInfo != null) {
+                Text(text = stringResource(R.string.database_size, Formatter.formatFileSize(LocalContext.current, databaseInfo.sizeBytes)))
+                Text(text = stringResource(R.string.database_devices_count, databaseInfo.totalDevices.toString()))
+                Text(text = stringResource(R.string.database_locations_count, databaseInfo.totalGeotags.toString()))
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            Text(text = stringResource(R.string.database_actions), fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(8.dp))
             BackupDB(viewModel = viewModel)
             Spacer(modifier = Modifier.height(8.dp))
             RestoreDB(viewModel = viewModel)
@@ -282,12 +294,22 @@ object SettingsScreen {
                 subtitle = stringResource(R.string.enable_deep_analysis_description),
                 onClick = { viewModel.onEnableDeepAnalysisClick() }
             )
+            Switcher(
+                value = viewModel.wakeUpWhileScanning,
+                title = stringResource(R.string.settings_keep_screen_on_while_scanning_title),
+                subtitle = stringResource(R.string.settings_keep_screen_on_while_scanning_description),
+                onClick = { viewModel.toggleWakeUpOnScreen() }
+            )
         }
     }
 
     @Composable
     private fun ProjectInformationBlock(viewModel: SettingsViewModel) {
         RoundedBox {
+            Button(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onProjectPurposeClick() }) {
+                Text(text = stringResource(R.string.button_project_purpose), color = MaterialTheme.colorScheme.onPrimary)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Text(text = stringResource(R.string.project_github_title, stringResource(id = R.string.app_name)), fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(4.dp))
             Button(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onGithubClick() }) {
@@ -296,7 +318,7 @@ object SettingsScreen {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = stringResource(R.string.report_issue_title), fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(4.dp))
-            Button(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.opReportIssueClick() }) {
+            Button(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onReportIssueClick() }) {
                 Text(text = stringResource(R.string.report), color = MaterialTheme.colorScheme.onPrimary)
             }
         }

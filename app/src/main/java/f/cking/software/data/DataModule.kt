@@ -17,14 +17,17 @@ import f.cking.software.data.repo.LocationRepository
 import f.cking.software.data.repo.RadarProfilesRepository
 import f.cking.software.data.repo.SettingsRepository
 import f.cking.software.data.repo.TagsRepository
+import kotlinx.coroutines.CoroutineScope
 import org.koin.dsl.module
 
 class DataModule(
     private val sharedPreferencesName: String,
     private val appDatabaseName: String,
+    private val globalScope: CoroutineScope,
 ) {
     val module = module {
-        single { BleScannerHelper(get(), get(), get()) }
+        single { globalScope }
+        single { BleScannerHelper(get(), get(), get(), get()) }
         single { BleFiltersProvider(get()) }
         single { get<Context>().getSharedPreferences(sharedPreferencesName, MODE_PRIVATE) }
         single { SettingsRepository(get()) }
@@ -32,13 +35,13 @@ class DataModule(
         single { DevicesRepository(get()) }
         single { PermissionHelper(get(), get(), get()) }
         single { ActivityProvider() }
-        single { IntentHelper(get(), get()) }
+        single { IntentHelper(get(), get(), get()) }
         single { RadarProfilesRepository(get()) }
         single { LocationProvider(get(), get(), get(), get()) }
         single { LocationRepository(get()) }
         single { JournalRepository(get()) }
         single { NotificationsHelper(get(), get(), get()) }
-        single { PowerModeHelper(get()) }
+        single { PowerModeHelper(get(), get(), get()) }
         single { TagsRepository(get()) }
     }
 }

@@ -7,6 +7,8 @@ import android.content.pm.ServiceInfo
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.widget.Toast
+import f.cking.software.R
 import f.cking.software.data.helpers.BleScannerHelper
 import f.cking.software.data.helpers.LocationProvider
 import f.cking.software.data.helpers.NotificationsHelper
@@ -19,7 +21,7 @@ import f.cking.software.domain.model.BleScanDevice
 import f.cking.software.domain.model.JournalEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +52,7 @@ class BgScanService : Service() {
     private var locationDisabledWasReported: Boolean = false
     private var bluetoothDisabledWasReported: Boolean = false
     private var backgroundLocationRestrictedWasReported: Boolean = false
+    private var observeScreenBrightnessJob: Job? = null
     private val nextScanRunnable = Runnable {
         scan()
     }
@@ -68,6 +71,7 @@ class BgScanService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        observeScreenBrightnessJob = powerModeHelper.observeScreenBrightnessMode()
         updateState(ScannerState.IDLING)
     }
 
@@ -93,14 +97,20 @@ class BgScanService : Service() {
             scan()
         } else {
             Timber.d("Background service launched")
-            startForeground(
-                NotificationsHelper.FOREGROUND_NOTIFICATION_ID,
-                notificationsHelper.buildForegroundNotification(
-                    NotificationsHelper.ServiceNotificationContent.NoDataYet,
-                    createCloseServiceIntent(this)
-                ),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
-            )
+            try {
+                startForeground(
+                    NotificationsHelper.FOREGROUND_NOTIFICATION_ID,
+                    notificationsHelper.buildForegroundNotification(
+                        NotificationsHelper.ServiceNotificationContent.NoDataYet,
+                        createCloseServiceIntent(this)
+                    ),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+                )
+            } catch (e: Exception) {
+                reportError(e)
+                Toast.makeText(this, R.string.unable_to_run_service_erro_toast, Toast.LENGTH_LONG).show()
+                stopSelf()
+            }
 
             permissionHelper.checkOrRequestPermission(
                 onRequestPermissions = { _, _, _ ->
@@ -121,6 +131,7 @@ class BgScanService : Service() {
         super.onDestroy()
         Timber.d("Background service destroyed")
         scope.cancel()
+        observeScreenBrightnessJob?.cancel()
         updateState(ScannerState.DISABLED)
         bleScannerHelper.stopScanning()
         locationProvider.stopLocationListening()
@@ -153,7 +164,7 @@ class BgScanService : Service() {
 
     private fun handleScanResult(batch: List<BleScanDevice>) {
         scope.launch {
-            val notificationContent: NotificationsHelper.ServiceNotificationContent = if (batch.isNotEmpty()){
+            val notificationContent: NotificationsHelper.ServiceNotificationContent = if (batch.isNotEmpty()) {
                 handleNonEmptyBatch(batch)
             } else {
                 handleEmptyBatch()

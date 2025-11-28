@@ -3,6 +3,7 @@ package f.cking.software
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.location.Location
 import android.net.Uri
 import android.util.Base64
 import android.util.TypedValue
@@ -22,6 +23,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.osmdroid.api.IGeoPoint
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.Projection
 import timber.log.Timber
 import java.security.MessageDigest
 import java.time.Instant
@@ -31,6 +35,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.PatternSyntaxException
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
@@ -220,4 +225,25 @@ suspend fun <T, R> List<T>.mapParallel(transform: suspend (T) -> R): List<R> {
 fun extract16BitUuid(fullUuid: String): String? {
     val regex = Regex("^0000([0-9a-fA-F]{4})-0000-1000-8000-00805f9b34fb$")
     return regex.find(fullUuid)?.groupValues?.get(1)
+}
+
+operator fun AtomicInteger.getValue(thisRef: Any?, property: kotlin.reflect.KProperty<*>): Int =
+    this.get()
+
+operator fun AtomicInteger.setValue(thisRef: Any?, property: kotlin.reflect.KProperty<*>, value: Int) =
+    this.set(value)
+
+fun IGeoPoint.toLocation(): Location {
+    return Location("").apply {
+        latitude = this@toLocation.latitude
+        longitude = this@toLocation.longitude
+    }
+}
+
+fun Projection.topLeft(): IGeoPoint {
+    return GeoPoint(boundingBox.latNorth, boundingBox.lonWest)
+}
+
+fun Projection.bottomRight(): IGeoPoint {
+    return GeoPoint(boundingBox.latSouth, boundingBox.lonEast)
 }

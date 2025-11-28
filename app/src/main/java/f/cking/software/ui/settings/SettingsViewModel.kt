@@ -2,6 +2,7 @@ package f.cking.software.ui.settings
 
 import android.app.Application
 import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import f.cking.software.BuildConfig
 import f.cking.software.R
+import f.cking.software.collectAsState
 import f.cking.software.data.helpers.IntentHelper
 import f.cking.software.data.helpers.LocationProvider
 import f.cking.software.data.helpers.PermissionHelper
@@ -18,6 +20,7 @@ import f.cking.software.data.repo.SettingsRepository
 import f.cking.software.domain.interactor.BackupDatabaseInteractor
 import f.cking.software.domain.interactor.ClearGarbageInteractor
 import f.cking.software.domain.interactor.CreateBackupFileInteractor
+import f.cking.software.domain.interactor.GetDatabaseInfoInteractor
 import f.cking.software.domain.interactor.RestoreDatabaseInteractor
 import f.cking.software.domain.interactor.SaveReportInteractor
 import f.cking.software.domain.interactor.SelectBackupFileInteractor
@@ -42,6 +45,7 @@ class SettingsViewModel(
     private val intentHelper: IntentHelper,
     private val permissionHelper: PermissionHelper,
     private val router: Router,
+    private val getDatabaseInfoInteractor: GetDatabaseInfoInteractor,
 ) : ViewModel() {
 
     var garbageRemovingInProgress: Boolean by mutableStateOf(false)
@@ -50,8 +54,11 @@ class SettingsViewModel(
     var useGpsLocationOnly: Boolean by mutableStateOf(settingsRepository.getUseGpsLocationOnly())
     var locationData: LocationProvider.LocationHandle? by mutableStateOf(null)
     var runOnStartup: Boolean by mutableStateOf(settingsRepository.getRunOnStartup())
+    var wakeUpWhileScanning: Boolean by mutableStateOf(settingsRepository.getWakeUpScreenWhileScanning())
     var silentModeEnabled: Boolean by mutableStateOf(settingsRepository.getSilentMode())
     var deepAnalysisEnabled: Boolean by mutableStateOf(settingsRepository.getEnableDeepAnalysis())
+
+    val databaseInfo by getDatabaseInfoInteractor.execute().collectAsState(viewModelScope, null)
 
     init {
         observeLocationData()
@@ -142,11 +149,20 @@ class SettingsViewModel(
         runOnStartup = newValue
     }
 
+    fun toggleWakeUpOnScreen() {
+        val newValue = !settingsRepository.getWakeUpScreenWhileScanning()
+        settingsRepository.setWakeUpScreenWhileScanning(newValue)
+        wakeUpWhileScanning = newValue
+        if (newValue && !Settings.System.canWrite(context)) {
+            permissionHelper.requestWriteSettingsPermission()
+        }
+    }
+
     fun changeSilentMode() {
         settingsRepository.setSilentMode(!settingsRepository.getSilentMode())
     }
 
-    fun opReportIssueClick() {
+    fun onReportIssueClick() {
         intentHelper.openUrl(BuildConfig.REPORT_ISSUE_URL)
     }
 
@@ -156,6 +172,10 @@ class SettingsViewModel(
 
     fun onGithubClick() {
         intentHelper.openUrl(BuildConfig.GITHUB_URL)
+    }
+
+    fun onProjectPurposeClick() {
+        router.navigate(ScreenNavigationCommands.OpenAboutScreen)
     }
 
     private fun observeLocationData() {
