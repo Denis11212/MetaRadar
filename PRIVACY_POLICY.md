@@ -4,7 +4,7 @@ Last updated February 27, 2023
 
 
 
-This privacy notice for **Konstantin Kulikov** ("Company," "we," "us," or "our"), describes how and why we might collect, store, use, and/or share ("process") your information when you use our services ("Services"), such as when you:
+This privacy notice for **BLE Research Group** ("Company," "we," "us," or "our"), describes how and why we might collect, store, use, and/or share ("process") your information when you use our services ("Services"), such as when you:
 Download and use our mobile application (Bluetooth Radar), or any other application of ours that links to this privacy notice
 Engage with us in other related ways, including any sales, marketing, or events
 Questions or concerns? Reading this privacy notice will help you understand your privacy rights and choices. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at f@cking.software.
@@ -14,7 +14,7 @@ Questions or concerns? Reading this privacy notice will help you understand your
 
 This summary provides key points from our privacy notice, but you can find out more details about any of these topics by clicking the link following each key point or by using our table of contents below to find the section you are looking for. You can also click here to go directly to our table of contents.
 
-What personal information do we process? When you visit, use, or navigate our Services, we may process personal information depending on how you interact with Konstantin Kulikov and the Services, the choices you make, and the products and features you use. Click here to learn more.
+What personal information do we process? When you visit, use, or navigate our Services, we may process personal information depending on how you interact with BLE Research Group and the Services, the choices you make, and the products and features you use. Click here to learn more.
 
 Do we process any sensitive personal information? We do not process sensitive personal information.
 
@@ -30,7 +30,7 @@ What are your rights? Depending on where you are located geographically, the app
 
 How do you exercise your rights? The easiest way to exercise your rights is by filling out our data subject request form available here, or by contacting us. We will consider and act upon any request in accordance with applicable data protection laws.
 
-Want to learn more about what Konstantin Kulikov does with any information we collect? Click here to review the notice in full.
+Want to learn more about what BLE Research Group does with any information we collect? Click here to review the notice in full.
 
 
 ## TABLE OF CONTENTS
@@ -269,7 +269,7 @@ We may disclose your personal information with our service providers pursuant to
 
 We may use your personal information for our own business purposes, such as for undertaking internal research for technological development and demonstration. This is not considered to be "selling" of your personal information.
 
-Konstantin Kulikov has not disclosed, sold, or shared any personal information to third parties for a business or commercial purpose in the preceding twelve (12) months. Konstantin Kulikov will not sell or share personal information in the future belonging to website visitors, users, and other consumers.
+BLE Research Group has not disclosed, sold, or shared any personal information to third parties for a business or commercial purpose in the preceding twelve (12) months. BLE Research Group will not sell or share personal information in the future belonging to website visitors, users, and other consumers.
 
 Your rights with respect to your personal data
 
@@ -327,7 +327,7 @@ Under the Virginia Consumer Data Protection Act (CDPA):
 
 If this definition "consumer" applies to you, we must adhere to certain rights and obligations regarding your personal data.
 
-The information we collect, use, and disclose about you will vary depending on how you interact with Konstantin Kulikov and our Services. To find out more, please visit the following links:
+The information we collect, use, and disclose about you will vary depending on how you interact with BLE Research Group and our Services. To find out more, please visit the following links:
 Personal data we collect
 How we use your personal data
 When and with whom we share your personal data
@@ -338,7 +338,7 @@ Right to correct inaccuracies in your personal data
 Right to request deletion of your personal data
 Right to obtain a copy of the personal data you previously shared with us
 Right to opt out of the processing of your personal data if it is used for targeted advertising, the sale of personal data, or profiling in furtherance of decisions that produce legal or similarly significant effects ("profiling")
-Konstantin Kulikov has not sold any personal data to third parties for business or commercial purposes. Konstantin Kulikov will not sell personal data in the future belonging to website visitors, users, and other consumers.
+BLE Research Group has not sold any personal data to third parties for business or commercial purposes. BLE Research Group will not sell personal data in the future belonging to website visitors, users, and other consumers.
 
 Exercise your rights provided under the Virginia CDPA
 
@@ -368,7 +368,7 @@ We may update this privacy notice from time to time. The updated version will be
 
 If you have questions or comments about this notice, you may email us at f@cking.software.
 
-If you are a resident in the European Economic Area, the "data controller" of your personal information is Konstantin Kulikov. Konstantin Kulikov has appointed Konstantin Kulikov to be its representative in the EEA. You can contact them directly regarding the processing of your information by Konstantin Kulikov, by email at f@cking.software, or by post to:
+If you are a resident in the European Economic Area, the "data controller" of your personal information is BLE Research Group. BLE Research Group has appointed BLE Research Group to be its representative in the EEA. You can contact them directly regarding the processing of your information by BLE Research Group, by email at f@cking.software, or by post to:
 Tallinn
 Estonia
 

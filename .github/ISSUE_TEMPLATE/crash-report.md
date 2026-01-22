@@ -3,7 +3,6 @@ name: Crash report
 about: Create a crash report to help us fix
 title: ''
 labels: crash
-assignees: Semper-Viventem
 
 ---
 
