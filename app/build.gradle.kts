@@ -26,13 +26,13 @@ android {
         minSdk = 29
         targetSdk = 36
 
-        versionCode = 1708536380
-        versionName = "0.32.0-beta"
+        versionCode = 1708536381
+        versionName = "0.32.1-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "REPORT_ISSUE_URL", "\"https://github.com/Semper-Viventem/MetaRadar/issues\"")
-        buildConfigField("String", "GITHUB_URL", "\"https://github.com/Semper-Viventem/MetaRadar\"")
+        buildConfigField("String", "REPORT_ISSUE_URL", "\"https://github.com/BLE-Research-Group/MetaRadar/issues\"")
+        buildConfigField("String", "GITHUB_URL", "\"https://github.com/BLE-Research-Group/MetaRadar\"")
         buildConfigField("String", "STORE_PAGE_URL", "\"Not specified\"")
         buildConfigField("String", "MAP_LICENSE_URL", "\"https://www.openstreetmap.org/copyright\"")
         buildConfigField("Boolean", "OFFLINE_MODE_DEFAULT_STATE", "false")
@@ -88,7 +88,7 @@ android {
 
             buildConfigField("String", "DISTRIBUTION", "\"Github\"")
             buildConfigField("Boolean", "STORE_RATING_IS_APPLICABLE", "false")
-            buildConfigField("String", "STORE_PAGE_URL", "\"https://github.com/Semper-Viventem/MetaRadar/releases?q=release+build\"")
+            buildConfigField("String", "STORE_PAGE_URL", "\"https://github.com/BLE-Research-Group/MetaRadar/releases?q=release+build\"")
         }
         create("googlePlay") {
             isDefault = false
